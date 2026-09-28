@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 import Layout from "../components/Layout";
+import HeroSlider from "../components/HeroSlider";
 
 function Dashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     patients: 0,
     doctors: 0,
@@ -36,41 +39,47 @@ function Dashboard() {
 
   return (
     <Layout>
-      <div className="page">
-        <div className="page-header">
-          <div>
-            <h1>Dashboard</h1>
-            <p>Hospital management overview</p>
-          </div>
-        </div>
-
-        {message && <p className="message error-message">{message}</p>}
-
-        <div className="stats-grid">
-          <div className="stat-card">
-            <span>Total Patients</span>
-            <strong>{stats.patients}</strong>
-          </div>
-
-          <div className="stat-card">
-            <span>Total Doctors</span>
-            <strong>{stats.doctors}</strong>
-          </div>
-
-          <div className="stat-card">
-            <span>Total Appointments</span>
-            <strong>{stats.appointments}</strong>
-          </div>
-        </div>
-
-        <div className="table-card">
-          <h2>Quick Start</h2>
-          <p>
-            Use the sidebar to manage patients, doctors, and appointment
-            bookings.
-          </p>
-        </div>
+      <div>
+        <h1 className="page-title">Dashboard</h1>
+        <p className="page-sub">Hospital management overview</p>
       </div>
+
+      {message && <p className="error-message">{message}</p>}
+
+      <HeroSlider onNavigate={navigate} />
+
+      <section className="stats">
+        <div className="card stat-main">
+          <div className="stat-label">Total patients</div>
+          <div className="stat-num">{stats.patients}</div>
+        </div>
+
+        <div className={`card ${stats.doctors === 0 ? "stat-empty" : ""}`}>
+          <div className="stat-label">Total doctors</div>
+          <div className="stat-num">{stats.doctors}</div>
+          {stats.doctors === 0 && (
+            <>
+              <p>No doctors yet. Add one to start booking.</p>
+              <button className="btn" onClick={() => navigate("/doctors")}>
+                Add doctor
+              </button>
+            </>
+          )}
+        </div>
+
+        <div className={`card ${stats.appointments === 0 ? "stat-empty" : ""}`}>
+          <div className="stat-label">Total appointments</div>
+          <div className="stat-num">{stats.appointments}</div>
+          {stats.appointments === 0 && (
+            <>
+              <p>Nothing booked yet.</p>
+              <button className="btn" onClick={() => navigate("/appointments")}>
+                Book appointment
+              </button>
+            </>
+          )}
+        </div>
+      </section>
     </Layout>
   );
 }
