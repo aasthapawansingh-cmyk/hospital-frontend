@@ -36,14 +36,15 @@ export default function HeroSlider({ onNavigate }) {
             <p>{s.text}</p>
             <button className="cta" onClick={() => onNavigate?.(s.to)}>{s.cta}</button>
           </div>
-          <svg className="art" viewBox="0 0 320 260" fill="none" aria-hidden="true">
-            <rect x="30" y="34" width="260" height="192" rx="26" fill="#fff" />
-            <rect x="30" y="34" width="260" height="52" rx="26" fill="#22E4C5" />
-            <rect x="30" y="60" width="260" height="26" fill="#22E4C5" />
-            <rect x="70" y="110" width="90" height="26" rx="13" fill="#22E4C5" />
-            <rect x="130" y="150" width="120" height="26" rx="13" fill="#B7C7D8" />
-            <rect x="90" y="190" width="80" height="20" rx="10" fill="#22E4C5" opacity=".6" />
-          </svg>
+         <svg className="art" viewBox="0 0 320 260" fill="none" aria-hidden="true">
+  <rect x="30" y="34" width="260" height="192" rx="26"
+        fill="#0A1226" fillOpacity=".7" stroke="#22E4C5" strokeOpacity=".35" strokeWidth="1.5" />
+  <rect x="30" y="34" width="260" height="52" rx="26" fill="#22E4C5" />
+  <rect x="30" y="60" width="260" height="26" fill="#22E4C5" />
+  <rect x="70" y="110" width="90" height="26" rx="13" fill="#22E4C5" />
+  <rect x="130" y="150" width="120" height="26" rx="13" fill="#2A3F66" />
+  <rect x="90" y="190" width="80" height="20" rx="10" fill="#22E4C5" opacity=".55" />
+</svg>
         </article>
       ))}
 
