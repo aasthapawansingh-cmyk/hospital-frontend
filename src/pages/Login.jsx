@@ -31,7 +31,7 @@ function Login() {
   return (
     <div className="login-page">
       <form className="login-card" onSubmit={handleLogin}>
-        <h1>Hospital Management</h1>
+        <h1>CareSync</h1>
         <p>Sign in to continue</p>
 
         <label>Username</label>

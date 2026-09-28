@@ -12,7 +12,7 @@ function Layout({ children }) {
   return (
     <div className="app-layout">
       <aside className="sidebar">
-        <h2>Hospital</h2>
+        <h2>CareSync</h2>
 
         <nav>
           <Link to="/dashboard">Dashboard</Link>
