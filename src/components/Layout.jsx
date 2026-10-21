@@ -6,9 +6,9 @@ function Layout({ children }) {
   const navigate = useNavigate();
 
   // ⬇ If your old Layout had its own logout code, paste it here instead
-  async function handleLogout() {
-    const logoutError = await logout();
-    navigate("/login", { replace: true, state: logoutError ? { logoutError } : null });
+  function handleLogout() {
+    logout();
+    navigate("/login", { replace: true });
   }
 
   const role = user?.roles?.[0] || "PATIENT";

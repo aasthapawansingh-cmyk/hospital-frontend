@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 import "../style.css";
 import { useAuth } from "../auth/AuthContext";
@@ -7,11 +7,10 @@ import { useAuth } from "../auth/AuthContext";
 function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const location = useLocation();
-  const [error, setError] = useState(location.state?.logoutError || "");
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { reload } = useAuth();
+  const { reload, logoutError } = useAuth();
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -71,6 +70,7 @@ function Login() {
         />
 
         {error && <div className="error">{error}</div>}
+        {logoutError && <div className="error" role="alert">{logoutError}</div>}
 
         <button type="submit" disabled={loading}>
           {loading ? "Signing in..." : "Login"}

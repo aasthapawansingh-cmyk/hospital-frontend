@@ -1,34 +1,37 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import api from "../api/api";
 
-const AuthContext = createContext({ user: null, loading: true, reload: async () => {}, logout: async () => null });
+const AuthContext = createContext({ user: null, loading: true, logoutError: "", reload: async () => {}, logout: () => {} });
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [logoutError, setLogoutError] = useState("");
   async function reload() {
+    setLogoutError("");
     if (!localStorage.getItem("token")) { setUser(null); setLoading(false); return; }
     setLoading(true);
     try { const response = await api.get("/auth/me"); setUser(response.data); }
     catch { localStorage.removeItem("token"); localStorage.removeItem("refreshToken"); setUser(null); }
     finally { setLoading(false); }
   }
-  async function logout() {
+  function logout() {
     const token = localStorage.getItem("token");
     localStorage.removeItem("token");
     localStorage.removeItem("refreshToken");
     setUser(null);
     setLoading(false);
-    if (!token) return null;
-    try {
-      await api.post("/auth/logout", {}, { headers: { Authorization: `Bearer ${token}` } });
-      return null;
-    } catch {
-      return "Your device was signed out, but the server could not revoke the refresh session. Please sign in again.";
-    }
+    setLogoutError("");
+    if (!token) return;
+    api.post("/auth/logout", {}, { headers: { Authorization: `Bearer ${token}` } }).catch((error) => {
+      const message = error.response?.status === 404
+        ? "You are signed out on this device, but this backend does not have the logout endpoint yet. Refresh-session revocation needs a backend deployment."
+        : "You are signed out on this device, but the server could not revoke the refresh session.";
+      setLogoutError(message);
+    });
   }
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { reload(); }, []);
-  return <AuthContext.Provider value={{ user, loading, reload, logout }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, loading, logoutError, reload, logout }}>{children}</AuthContext.Provider>;
 }
 // eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => useContext(AuthContext);
