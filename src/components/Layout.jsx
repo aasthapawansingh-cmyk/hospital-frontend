@@ -7,8 +7,8 @@ function Layout({ children }) {
 
   // ⬇ If your old Layout had its own logout code, paste it here instead
   function handleLogout() {
-    logout();
     navigate("/login", { replace: true });
+    logout();
   }
 
   const role = user?.roles?.[0] || "PATIENT";
