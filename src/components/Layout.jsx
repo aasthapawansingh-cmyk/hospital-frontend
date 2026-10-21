@@ -40,7 +40,7 @@ function Layout({ children }) {
           ))}
         </nav>
 
-        <button className="logout" onClick={handleLogout}>Log out</button>
+        <button type="button" className="logout" onClick={handleLogout}>Log out</button>
       </aside>
 
       <main>{children}</main>
