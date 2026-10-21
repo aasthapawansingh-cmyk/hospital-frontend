@@ -1,20 +1,21 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 
 function Layout({ children }) {
-  const navigate = useNavigate();
+  const { user } = useAuth();
 
   // ⬇ If your old Layout had its own logout code, paste it here instead
   const handleLogout = () => {
   localStorage.removeItem("token");
   localStorage.removeItem("refreshToken");
-  navigate("/login");
+  window.location.assign("/login");
 };
 
+  const role = user?.roles?.[0] || "PATIENT";
   const links = [
     ["/dashboard", "Dashboard"],
-    ["/patients", "Patients"],
-    ["/doctors", "Doctors"],
     ["/appointments", "Appointments"],
+    ...(role === "ADMIN" ? [["/patients", "Patients"], ["/doctors", "Doctors"], ["/users", "Users"]] : []),
   ];
 
   return (
@@ -28,6 +29,7 @@ function Layout({ children }) {
             </svg>
           </div>
           <h2>CareSync</h2>
+          <small>{role.toLowerCase()} workspace</small>
         </div>
 
         <nav className="nav">

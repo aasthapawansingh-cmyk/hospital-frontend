@@ -11,6 +11,7 @@ function Patients() {
     gender: "",
     contact: "",
     address: "",
+    accountUsername: "",
   });
   const [message, setMessage] = useState("");
   const [editingPatientId, setEditingPatientId] = useState(null);
@@ -25,6 +26,7 @@ function Patients() {
       gender: patient.gender,
       contact: patient.contact,
       address: patient.address,
+      accountUsername: patient.accountUsername || "",
     });
 
     setMessage("");
@@ -37,6 +39,7 @@ function Patients() {
       gender: "",
       contact: "",
       address: "",
+      accountUsername: "",
     });
     setEditingPatientId(null);
   }
@@ -54,6 +57,7 @@ function Patients() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchPatients();
   }, []);
 
@@ -150,6 +154,7 @@ function Patients() {
             onChange={handleChange}
             placeholder="Address"
           />
+          <input name="accountUsername" value={form.accountUsername} onChange={handleChange} placeholder="Linked account username" />
 
           <div className="button-row">
             <button type="submit">

@@ -8,6 +8,8 @@ import Doctors from "./pages/Doctors";
 import Appointments from "./pages/Appointments";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Splash from "./components/Splash";
+import { AuthProvider } from "./auth/AuthContext";
+import Users from "./pages/Users";
 
 function App() {
   const [showSplash, setShowSplash] = useState(
@@ -25,7 +27,7 @@ function App() {
         {showSplash && <Splash onDone={finishSplash} />}
       </AnimatePresence>
 
-      <BrowserRouter>
+      <BrowserRouter><AuthProvider>
         <Routes>
           <Route path="/" element={<Navigate to="/login" />} />
           <Route path="/login" element={<Login />} />
@@ -42,7 +44,7 @@ function App() {
           <Route
             path="/patients"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={["ADMIN"]}>
                 <Patients />
               </ProtectedRoute>
             }
@@ -51,22 +53,23 @@ function App() {
           <Route
             path="/doctors"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={["ADMIN"]}>
                 <Doctors />
               </ProtectedRoute>
             }
           />
+          <Route path="/users" element={<ProtectedRoute roles={["ADMIN"]}><Users /></ProtectedRoute>} />
 
           <Route
             path="/appointments"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={["ADMIN", "DOCTOR", "PATIENT"]}>
                 <Appointments />
               </ProtectedRoute>
             }
           />
         </Routes>
-      </BrowserRouter>
+      </AuthProvider></BrowserRouter>
     </>
   );
 }

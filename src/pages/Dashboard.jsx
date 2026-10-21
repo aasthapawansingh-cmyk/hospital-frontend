@@ -2,86 +2,24 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 import Layout from "../components/Layout";
-import HeroSlider from "../components/HeroSlider";
+import { useAuth } from "../auth/AuthContext";
 
-function Dashboard() {
+export default function Dashboard() {
+  const { user } = useAuth();
+  const role = user?.roles?.[0] || "PATIENT";
+  const [appointments, setAppointments] = useState([]);
+  const [counts, setCounts] = useState({ patients: 0, doctors: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
-  const [stats, setStats] = useState({
-    patients: 0,
-    doctors: 0,
-    appointments: 0,
-  });
-  const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    async function fetchStats() {
-      try {
-        const [patientsResponse, doctorsResponse, appointmentsResponse] =
-          await Promise.all([
-            api.get("/api/v1/patient"),
-            api.get("/api/v1/doctor"),
-            api.get("/api/v1/appointment"),
-          ]);
-
-        setStats({
-          patients:
-            patientsResponse.data.content?.length || patientsResponse.data.length || 0,
-          doctors: doctorsResponse.data.length || 0,
-          appointments: appointmentsResponse.data.length || 0,
-        });
-      } catch (error) {
-        setMessage("Could not load dashboard summary");
-      }
-    }
-
-    fetchStats();
-  }, []);
-
-  return (
-    <Layout>
-      <div>
-        <h1 className="page-title">Dashboard</h1>
-        <p className="page-sub">Hospital management overview</p>
-      </div>
-
-      {message && <p className="error-message">{message}</p>}
-
-      <HeroSlider onNavigate={navigate} />
-
-      <section className="stats">
-        <div className="card stat-main">
-          <div className="stat-label">Total patients</div>
-          <div className="stat-num">{stats.patients}</div>
-        </div>
-
-        <div className={`card ${stats.doctors === 0 ? "stat-empty" : ""}`}>
-          <div className="stat-label">Total doctors</div>
-          <div className="stat-num">{stats.doctors}</div>
-          {stats.doctors === 0 && (
-            <>
-              <p>No doctors yet. Add one to start booking.</p>
-              <button className="btn" onClick={() => navigate("/doctors")}>
-                Add doctor
-              </button>
-            </>
-          )}
-        </div>
-
-        <div className={`card ${stats.appointments === 0 ? "stat-empty" : ""}`}>
-          <div className="stat-label">Total appointments</div>
-          <div className="stat-num">{stats.appointments}</div>
-          {stats.appointments === 0 && (
-            <>
-              <p>Nothing booked yet.</p>
-              <button className="btn" onClick={() => navigate("/appointments")}>
-                Book appointment
-              </button>
-            </>
-          )}
-        </div>
-      </section>
-    </Layout>
-  );
+  useEffect(() => { (async () => { try {
+    const a = await api.get("/api/v1/appointment"); setAppointments(a.data);
+    if (role === "ADMIN") { const [p,d] = await Promise.all([api.get("/api/v1/patient"),api.get("/api/v1/doctor")]); setCounts({patients:p.data.totalElements ?? p.data.length ?? 0,doctors:d.data.length ?? 0}); }
+  } catch { setError("We couldn’t load your dashboard. Try again."); } finally { setLoading(false); } })(); }, [role]);
+  const title = role === "ADMIN" ? "Hospital overview" : role === "DOCTOR" ? "Clinical workspace" : "Your care";
+  return <Layout><section className="page"><header className="page-header"><div><h1>{title}</h1><p>Welcome, {user?.username}.</p></div></header>
+    {error && <p className="error-message" role="alert">{error}</p>}{loading ? <div className="screen-state">Loading your appointments…</div> : <>
+      <div className="stats">{role === "ADMIN" && <><article className="card"><div className="stat-label">Patients</div><strong className="stat-num">{counts.patients}</strong></article><article className="card"><div className="stat-label">Doctors</div><strong className="stat-num">{counts.doctors}</strong></article></>}<article className="card"><div className="stat-label">{role === "PATIENT" ? "Your appointments" : "Appointments in your care"}</div><strong className="stat-num">{appointments.length}</strong></article></div>
+      <div className="table-card"><div className="page-header"><h2>Recent appointments</h2><button onClick={()=>navigate("/appointments")}>View appointments</button></div>{appointments.length ? <ul className="appointment-list">{appointments.slice(0,5).map(a=><li key={a.id}><div><strong>{a.patient?.name || "Your visit"}</strong><span>{a.date} · {a.time}</span></div><span className={`status status-${a.status.toLowerCase()}`}>{a.status.replace("_"," ")}</span></li>)}</ul> : <div className="empty-state">No appointments yet.</div>}</div>
+    </>}</section></Layout>;
 }
-
-export default Dashboard;

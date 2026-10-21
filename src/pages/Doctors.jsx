@@ -9,6 +9,7 @@ function Doctors() {
     name: "",
     specialization: "",
     contact: "",
+    accountUsername: "",
   });
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,6 +27,7 @@ function Doctors() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchDoctors();
   }, []);
 
@@ -47,6 +49,7 @@ function Doctors() {
         name: "",
         specialization: "",
         contact: "",
+        accountUsername: "",
       });
 
       setMessage("Doctor added successfully");
@@ -99,6 +102,7 @@ function Doctors() {
           onChange={handleChange}
           placeholder="Contact"
         />
+        <input name="accountUsername" value={form.accountUsername} onChange={handleChange} placeholder="Linked account username" />
 
         <button type="submit">Add Doctor</button>
       </form>
