@@ -10,8 +10,16 @@ export function AuthProvider({ children }) {
     setLogoutError("");
     if (!localStorage.getItem("token")) { setUser(null); setLoading(false); return; }
     setLoading(true);
-    try { const response = await api.get("/auth/me"); setUser(response.data); }
-    catch { localStorage.removeItem("token"); localStorage.removeItem("refreshToken"); setUser(null); }
+    try {
+      const response = await api.get("/auth/me");
+      setUser(response.data);
+      return response.data;
+    } catch (error) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
+      setUser(null);
+      throw error;
+    }
     finally { setLoading(false); }
   }
   function logout() {
@@ -31,7 +39,7 @@ export function AuthProvider({ children }) {
     });
   }
   // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { reload(); }, []);
+  useEffect(() => { reload().catch(() => {}); }, []);
   return <AuthContext.Provider value={{ user, loading, logoutError, reload, logout }}>{children}</AuthContext.Provider>;
 }
 // eslint-disable-next-line react-refresh/only-export-components

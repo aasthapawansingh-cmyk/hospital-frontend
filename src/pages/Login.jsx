@@ -27,8 +27,18 @@ function Login() {
       localStorage.setItem("refreshToken", response.data.refreshToken);
       await reload();
       navigate("/dashboard");
-    } catch {
-      setError("Invalid username or password");
+    } catch (loginError) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
+      if (!loginError.response) {
+        setError("Cannot reach the login server. Check that the backend is running and your API URL is correct.");
+      } else if (loginError.response.status === 401 || loginError.response.status === 403) {
+        setError("Invalid username or password.");
+      } else if (loginError.config?.url?.endsWith("/auth/me")) {
+        setError("Login succeeded, but your account details could not be loaded. Please try again.");
+      } else {
+        setError("The login server returned an error. Check the backend logs and database connection.");
+      }
     } finally {
       setLoading(false);
     }

@@ -1,7 +1,9 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "https://hospital-backend-fyo4.onrender.com",
+  baseURL: import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV
+    ? "http://localhost:8080"
+    : "https://hospital-backend-fyo4.onrender.com"),
 });
 
 api.interceptors.request.use((config) => {
