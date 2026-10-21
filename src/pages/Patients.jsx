@@ -77,6 +77,8 @@ function Patients() {
         await api.put(`/api/v1/patient/${editingPatientId}`, {
           ...form,
           age: Number(form.age),
+          contact: form.contact.trim() || null,
+          accountUsername: form.accountUsername.trim() || null,
         });
 
         setMessage("Patient updated successfully");
@@ -84,6 +86,8 @@ function Patients() {
         await api.post("/api/v1/patient", {
           ...form,
           age: Number(form.age),
+          contact: form.contact.trim() || null,
+          accountUsername: form.accountUsername.trim() || null,
         });
 
         setMessage("Patient added successfully");
@@ -99,7 +103,7 @@ function Patients() {
   async function handleDelete(id) {
     try {
       await api.delete(`/api/v1/patient/${id}`);
-      setMessage("Patient deleted successfully");
+      setMessage("Patient archived. Existing appointment history has been preserved.");
       fetchPatients();
     } catch (error) {
       setMessage(getErrorMessage(error, "Could not delete patient"));
@@ -124,6 +128,7 @@ function Patients() {
             value={form.name}
             onChange={handleChange}
             placeholder="Patient name"
+            required
           />
 
           <input
@@ -132,6 +137,8 @@ function Patients() {
             onChange={handleChange}
             placeholder="Age"
             type="number"
+            min="1"
+            required
           />
 
           <input
@@ -139,6 +146,7 @@ function Patients() {
             value={form.gender}
             onChange={handleChange}
             placeholder="Gender"
+            required
           />
 
           <input
@@ -146,6 +154,9 @@ function Patients() {
             value={form.contact}
             onChange={handleChange}
             placeholder="10 digit contact"
+            inputMode="numeric"
+            pattern="[0-9]{10}"
+            title="Enter exactly 10 digits"
           />
 
           <input
@@ -208,8 +219,9 @@ function Patients() {
                       <button
                         className="danger-button"
                         onClick={() => handleDelete(patient.id)}
+                        type="button"
                       >
-                        Delete
+                        Archive
                       </button>
                     </div>
                   </td>

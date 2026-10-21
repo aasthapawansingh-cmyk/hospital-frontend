@@ -18,13 +18,14 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem("token");
     localStorage.removeItem("token");
     localStorage.removeItem("refreshToken");
+    sessionStorage.removeItem("user");
     setUser(null);
     setLoading(false);
     setLogoutError("");
     if (!token) return;
     api.post("/auth/logout", {}, { headers: { Authorization: `Bearer ${token}` } }).catch((error) => {
       const message = error.response?.status === 404
-        ? "You are signed out on this device, but this backend does not have the logout endpoint yet. Refresh-session revocation needs a backend deployment."
+        ? "You are signed out on this device, but the server does not support refresh-session revocation yet."
         : "You are signed out on this device, but the server could not revoke the refresh session.";
       setLogoutError(message);
     });
