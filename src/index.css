@@ -13,24 +13,32 @@ body {
   min-height: 100vh;
 }
 
-.screen-state,.empty-state { padding: 24px; color: #536174; text-align: center; }
-.error-message { color: #9d2525; background: #fff0ef; border-radius: 10px; padding: 12px 16px; }
+.screen-state,.empty-state { padding: 24px; color: var(--muted, #536174); text-align: center; }
+.error-message { color: var(--danger, #9d2525); background: rgba(255, 92, 108, .12); border-radius: 10px; padding: 12px 16px; }
 .appointment-list { display: grid; gap: 14px; list-style: none; padding: 0; }
 .appointment-list > li,.appointment-heading { display:flex; justify-content:space-between; align-items:center; gap:16px; }
 .appointment-list > li { padding: 12px 0; border-bottom: 1px solid #e6ebf1; }
 .appointment-list li div,.appointment-heading div { display:grid; gap:5px; }
 .appointment-list li span,.appointment-heading p { color:#64748b; margin:0; }
-.appointment-card { border:1px solid #e0e7ef; border-radius:14px; padding:18px; background:#fff; }
+.appointment-card { border:1px solid var(--line, #e0e7ef); border-radius:14px; padding:18px; background:var(--surface, #fff); display:grid; gap:14px; }
 .appointment-card h3 { margin:0; }
-.status { display:inline-flex; border-radius:999px; padding:6px 10px; font-size:.78rem; font-weight:700; background:#edf2f7; }
-.status-pending { color:#8a5b00; background:#fff3d5; }
-.status-in_progress { color:#174ea6; background:#e7f0ff; }
-.status-completed { color:#146c43; background:#e4f5ed; }
-.timeline { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); list-style:none; gap:8px; padding:0; margin:20px 0; }
-.timeline li { display:grid; gap:5px; padding-top:10px; border-top:3px solid #d9e1ea; color:#8390a0; font-size:.82rem; }
-.timeline li.done { border-color:#268568; color:#194c40; font-weight:600; }
-.timeline small { font-size:.72rem; color:#68778a; font-weight:400; }
+.status { display:inline-flex; border-radius:999px; padding:6px 10px; font-size:.78rem; font-weight:700; background:var(--line, #edf2f7); color:var(--ink, #172033); }
+.status-pending { color:#f1c466; background:rgba(241,196,102,.14); }
+.status-confirmed { color:#8db8ff; background:rgba(76,139,245,.16); }
+.status-in_progress { color:#6ce0cb; background:rgba(34,228,197,.14); }
+.status-completed { color:#71d6a6; background:rgba(54,187,120,.15); }
+.status-cancelled { color:#ff7d89; background:rgba(255,92,108,.15); }
+.timeline { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); list-style:none; gap:8px; padding:0; margin:8px 0; }
+.timeline li { display:grid; gap:5px; padding-top:10px; border-top:3px solid var(--line, #d9e1ea); color:var(--muted, #8390a0); font-size:.82rem; }
+.timeline li.done { border-color:var(--accent, #268568); color:var(--ink, #194c40); font-weight:600; }
+.timeline small { font-size:.72rem; color:var(--muted, #68778a); font-weight:400; }
+.patient-profile dl { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+.patient-profile dl div { display:grid; gap:4px; }
+.patient-profile dt { color:var(--muted); font-size:.82rem; }
+.patient-profile dd { margin:0; }
+.patient-profile .profile-address { grid-column:1/-1; }
+.patient-detail,.legacy-status { color:var(--muted); }
 .booking-form { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
 .booking-form h2 { grid-column:1/-1; }
 .responsive-table { overflow-x:auto; }
-@media(max-width:680px) { .booking-form { grid-template-columns:1fr; } .timeline { grid-template-columns:1fr; } .appointment-heading { align-items:flex-start; flex-direction:column; } }
+@media(max-width:680px) { .booking-form { grid-template-columns:1fr; } .timeline { grid-template-columns:repeat(2,minmax(0,1fr)); } .appointment-heading { align-items:flex-start; flex-direction:column; } .patient-profile dl { grid-template-columns:1fr; } .patient-profile .profile-address { grid-column:auto; } }
