@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import api from "../api/api";
 import Layout from "../components/Layout";
 import { useAuth } from "../auth/AuthContext";
@@ -17,10 +17,13 @@ export default function Appointments() {
   const [form, setForm] = useState({ date: "", time: "", patientId: "", doctorId: "", reason: "" });
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [availabilityCheckedFor, setAvailabilityCheckedFor] = useState("");
   const [optionsLoading, setOptionsLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const availabilityRequestId = useRef(0);
+  const slotKey = form.date && form.time ? `${form.date}|${form.time}` : "";
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -42,31 +45,52 @@ export default function Appointments() {
     }
   }, [load, role]);
 
-  async function updateAvailability(nextForm) {
-    if (!nextForm.date || !nextForm.time) { setDoctors([]); return; }
+  async function checkAvailability() {
+    if (!form.date || !form.time) return;
+    const checkedKey = `${form.date}|${form.time}`;
+    const requestId = ++availabilityRequestId.current;
+    setDoctors([]);
+    setAvailabilityCheckedFor("");
+    setError("");
     setBookingLoading(true);
     try {
-      const query = new URLSearchParams({ date: nextForm.date, time: nextForm.time });
-      setDoctors((await api.get(`/api/v1/doctor/available?${query}`)).data);
-    } catch { setError("Could not load available doctors for that time."); }
-    finally { setBookingLoading(false); }
+      const query = new URLSearchParams({ date: form.date, time: form.time });
+      const response = await api.get(`/api/v1/doctor/available?${query}`);
+      if (requestId === availabilityRequestId.current) {
+        setDoctors(response.data);
+        setAvailabilityCheckedFor(checkedKey);
+      }
+    } catch {
+      if (requestId === availabilityRequestId.current) setError("Could not check availability. Please try again.");
+    } finally {
+      if (requestId === availabilityRequestId.current) setBookingLoading(false);
+    }
   }
 
   function changeDateTime(field, value) {
+    availabilityRequestId.current += 1;
     const next = { ...form, [field]: value, doctorId: "" };
     setForm(next);
     setNotice("");
-    updateAvailability(next);
+    setError("");
+    setDoctors([]);
+    setAvailabilityCheckedFor("");
+    setBookingLoading(false);
   }
 
   async function create(e) {
-    e.preventDefault(); setSaving(true); setError(""); setNotice("");
+    e.preventDefault();
+    if (availabilityCheckedFor !== slotKey || !doctors.some((doctor) => String(doctor.id) === form.doctorId)) {
+      setError("Check availability and select a doctor available for that exact date and time.");
+      return;
+    }
+    setSaving(true); setError(""); setNotice("");
     try {
       if (role === "PATIENT") {
         await api.post("/api/v1/appointment/request", {
           date: form.date, time: form.time, doctorId: Number(form.doctorId), reason: form.reason,
         });
-        setNotice("Appointment request sent. It will appear as pending until staff confirms it.");
+        setNotice("Request submitted as Pending. A doctor or admin must confirm it before the appointment is confirmed.");
       } else {
         await api.post("/api/v1/appointment", {
           date: form.date, time: form.time, patientId: Number(form.patientId),
@@ -76,8 +100,13 @@ export default function Appointments() {
       }
       setForm({ date: "", time: "", patientId: "", doctorId: "", reason: "" });
       setDoctors([]);
+      setAvailabilityCheckedFor("");
       await load();
-    } catch (e) { setError(responseError(e, "Could not save the appointment request.")); }
+    } catch (e) {
+      setError(e.response?.status === 409
+        ? "That slot was just taken by another request. Check availability again or choose another date and time."
+        : responseError(e, "Could not save the appointment request."));
+    }
     finally { setSaving(false); }
   }
 
@@ -94,8 +123,9 @@ export default function Appointments() {
     if (role === "ADMIN") return appointment.status === "PENDING"
       ? [["CONFIRMED", "Confirm"], ["CANCELLED", "Cancel"]]
       : appointment.status === "CONFIRMED" ? [["CANCELLED", "Cancel"]] : [];
-    if (role === "DOCTOR") return appointment.status === "CONFIRMED"
-      ? [["IN_PROGRESS", "Start visit"]]
+    if (role === "DOCTOR") return appointment.status === "PENDING"
+      ? [["CONFIRMED", "Confirm request"], ["CANCELLED", "Reject request"]]
+      : appointment.status === "CONFIRMED" ? [["IN_PROGRESS", "Start visit"]]
       : appointment.status === "IN_PROGRESS" ? [["COMPLETED", "Complete visit"]] : [];
     return appointment.status === "PENDING" ? [["CANCELLED", "Cancel request"]] : [];
   }
@@ -110,12 +140,20 @@ export default function Appointments() {
       {role === "ADMIN" && <select aria-label="Patient" required value={form.patientId} onChange={e => setForm({ ...form, patientId: e.target.value })} disabled={optionsLoading || !patients.length}><option value="">{optionsLoading ? "Loading patients…" : patients.length ? "Choose patient" : "No patient records available"}</option>{patients.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>}
       <input type="date" aria-label="Appointment date" required value={form.date} onChange={e => changeDateTime("date", e.target.value)} />
       <input type="time" aria-label="Appointment time" required value={form.time} onChange={e => changeDateTime("time", e.target.value)} />
-      <select aria-label="Doctor" required value={form.doctorId} onChange={e => setForm({ ...form, doctorId: e.target.value })} disabled={bookingLoading || !form.date || !form.time}>
-        <option value="">{bookingLoading ? "Checking availability…" : !form.date || !form.time ? "Choose a date and time first" : doctors.length ? "Choose available doctor" : "No doctor available at this time"}</option>
+      <div className="availability-check">
+        <button type="button" className="check-availability" onClick={checkAvailability} disabled={!slotKey || bookingLoading || saving}>
+          {bookingLoading ? "Checking availability…" : "Check availability"}
+        </button>
+        {slotKey && availabilityCheckedFor === slotKey && doctors.length > 0 && <span role="status">{doctors.length} doctor{doctors.length === 1 ? "" : "s"} available for this slot.</span>}
+      </div>
+      {slotKey && availabilityCheckedFor === slotKey && doctors.length === 0 && <p className="availability-empty" role="status">No doctors are available at that date and time. Change the date or time and check again.</p>}
+      <select aria-label="Available doctor" required value={form.doctorId} onChange={e => setForm({ ...form, doctorId: e.target.value })} disabled={bookingLoading || availabilityCheckedFor !== slotKey || !doctors.length}>
+        <option value="">{availabilityCheckedFor !== slotKey ? "Check availability to choose a doctor" : doctors.length ? "Choose an available doctor" : "No available doctors"}</option>
         {doctors.map(d => <option key={d.id} value={d.id}>{d.name} · {d.specialization}</option>)}
       </select>
       <textarea aria-label="Reason for appointment" placeholder="Reason for appointment" required maxLength={1000} value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} />
-      <button disabled={saving || bookingLoading}>{saving ? "Saving…" : role === "PATIENT" ? "Send request" : "Schedule as pending"}</button>
+      <button type="submit" disabled={saving || bookingLoading || availabilityCheckedFor !== slotKey || !doctors.some((doctor) => String(doctor.id) === form.doctorId)}>{saving ? "Submitting…" : role === "PATIENT" ? "Send appointment request" : "Schedule as pending"}</button>
+      {role === "PATIENT" && <p className="request-pending-note">Requests remain Pending until a doctor or admin confirms them.</p>}
     </form>}
 
     <div className="table-card"><h2>{role === "ADMIN" ? "All requests and appointments" : role === "DOCTOR" ? "Your assigned visits" : "Your visit history"}</h2>
