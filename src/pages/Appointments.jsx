@@ -22,6 +22,7 @@ export default function Appointments() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [rescheduling, setRescheduling] = useState(null);
   const availabilityRequestId = useRef(0);
   const slotKey = form.date && form.time ? `${form.date}|${form.time}` : "";
 
@@ -112,17 +113,39 @@ export default function Appointments() {
 
   async function transition(appointment, status) {
     setError(""); setNotice("");
+    const requiresReason = (status === "CANCELLED" && role !== "PATIENT") || (role === "ADMIN" && ["IN_PROGRESS", "COMPLETED"].includes(status));
+    const reason = requiresReason ? window.prompt(status === "CANCELLED" ? "Reason for cancelling this appointment:" : "Administrative correction reason:") : "";
+    if (requiresReason && !reason?.trim()) return;
     try {
-      await api.patch(`/api/v1/appointment/${appointment.id}/status`, { status });
+      await api.patch(`/api/v1/appointment/${appointment.id}/status`, { status, reason: reason?.trim() || null });
       setNotice(status === "CANCELLED" ? "Appointment cancelled." : `Appointment marked ${status.toLowerCase().replace("_", " ")}.`);
       await load();
     } catch (e) { setError(responseError(e, "That status change was not allowed.")); }
   }
 
+  async function checkRescheduleAvailability() {
+    if (!rescheduling?.date || !rescheduling?.time) return;
+    setRescheduling({ ...rescheduling, checking: true, doctors: [], doctorId: "" });
+    try {
+      const query = new URLSearchParams({ date: rescheduling.date, time: rescheduling.time });
+      const response = await api.get(`/api/v1/doctor/available?${query}`);
+      setRescheduling(current => current && ({ ...current, checking: false, doctors: response.data }));
+    } catch (e) { setError(responseError(e, "Could not check new slot availability.")); setRescheduling(current => current && ({ ...current, checking: false })); }
+  }
+  async function saveReschedule(appointmentId) {
+    setSaving(true); setError(""); setNotice("");
+    try {
+      await api.patch(`/api/v1/appointment/${appointmentId}/schedule`, { date: rescheduling.date, time: rescheduling.time, doctorId: Number(rescheduling.doctorId), reason: rescheduling.reason });
+      setNotice("Appointment rescheduled. The change was added to its audit history."); setRescheduling(null); await load();
+    } catch (e) { setError(responseError(e, "Could not reschedule this appointment.")); }
+    finally { setSaving(false); }
+  }
+
   function actionsFor(appointment) {
     if (role === "ADMIN") return appointment.status === "PENDING"
       ? [["CONFIRMED", "Confirm"], ["CANCELLED", "Cancel"]]
-      : appointment.status === "CONFIRMED" ? [["CANCELLED", "Cancel"]] : [];
+      : appointment.status === "CONFIRMED" ? [["CANCELLED", "Cancel"], ["IN_PROGRESS", "Correct to in progress"]]
+      : appointment.status === "IN_PROGRESS" ? [["COMPLETED", "Correct to completed"]] : [];
     if (role === "DOCTOR") return appointment.status === "PENDING"
       ? [["CONFIRMED", "Confirm request"], ["CANCELLED", "Reject request"]]
       : appointment.status === "CONFIRMED" ? [["IN_PROGRESS", "Start visit"]]
@@ -165,9 +188,21 @@ export default function Appointments() {
           {a.status === "CANCELLED" ? <p className="legacy-status">This appointment was cancelled and is kept in the record.</p> : <ol className="timeline">{statuses.map((status, index) => {
             const reached = statuses.indexOf(a.status);
             const history = a.statusHistory?.find(h => h.toStatus === status);
-            return <li className={reached >= index ? "done" : ""} key={status}><span>{status.replace("_", " ")}</span>{history && <small>{history.actorUsername} · {new Date(history.changedAt).toLocaleString()}</small>}</li>;
+            return <li className={reached >= index ? "done" : ""} key={status}><span>{status.replace("_", " ")}</span>{history && <small>{history.actorUsername} · {new Date(history.changedAt).toLocaleString()}{history.reason ? ` · ${history.reason}` : ""}</small>}</li>;
           })}</ol>}
+          {!!a.scheduleHistory?.length && <div className="schedule-history"><strong>Schedule history</strong>{a.scheduleHistory.map(change => <small key={change.id}>{change.actorUsername} · {change.fromDate} {change.fromTime} → {change.toDate} {change.toTime} · {change.reason}</small>)}</div>}
           <div className="table-actions">{actionsFor(a).map(([status, label]) => <button type="button" className={status === "CANCELLED" ? "danger-button" : ""} key={status} onClick={() => transition(a, status)}>{label}</button>)}</div>
+          {role === "ADMIN" && ["PENDING", "CONFIRMED"].includes(a.status) && <>
+            {rescheduling?.id !== a.id ? <button type="button" onClick={() => setRescheduling({ id: a.id, date: a.date, time: a.time, doctors: [], doctorId: "", reason: "", checking: false })}>Reschedule</button> : <form className="form-card reschedule-form" onSubmit={e => { e.preventDefault(); saveReschedule(a.id); }}>
+              <h4>Reschedule appointment</h4>
+              <input type="date" required aria-label="New appointment date" value={rescheduling.date} onChange={e => setRescheduling({ ...rescheduling, date: e.target.value, doctors: [], doctorId: "" })} />
+              <input type="time" required aria-label="New appointment time" value={rescheduling.time} onChange={e => setRescheduling({ ...rescheduling, time: e.target.value, doctors: [], doctorId: "" })} />
+              <button type="button" onClick={checkRescheduleAvailability} disabled={rescheduling.checking}>{rescheduling.checking ? "Checking…" : "Check new slot"}</button>
+              {rescheduling.doctors?.length === 0 && !rescheduling.checking && <p>Check availability to select an active doctor.</p>}
+              {!!rescheduling.doctors?.length && <><select required aria-label="Replacement doctor" value={rescheduling.doctorId} onChange={e => setRescheduling({ ...rescheduling, doctorId: e.target.value })}><option value="">Choose available doctor</option>{rescheduling.doctors.map(d => <option key={d.id} value={d.id}>{d.name} · {d.specialization}</option>)}</select><textarea required maxLength={1000} aria-label="Reschedule reason" placeholder="Reason for rescheduling" value={rescheduling.reason} onChange={e => setRescheduling({ ...rescheduling, reason: e.target.value })} /><button type="submit" disabled={saving || !rescheduling.doctorId}>{saving ? "Saving…" : "Save new schedule"}</button></>}
+              <button type="button" onClick={() => setRescheduling(null)}>Close</button>
+            </form>}
+          </>}
         </article>)}</div>}
     </div>
   </section></Layout>;

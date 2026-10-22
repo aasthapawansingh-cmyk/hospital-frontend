@@ -45,6 +45,12 @@ export default function Dashboard() {
         {role === "ADMIN" && <><article className="card"><div className="stat-label">Patients</div><strong className="stat-num">{counts.patients}</strong></article><article className="card"><div className="stat-label">Doctors</div><strong className="stat-num">{counts.doctors}</strong></article></>}
         <article className="card"><div className="stat-label">{role === "PATIENT" ? "Your appointments" : role === "DOCTOR" ? "Assigned appointments" : "Appointment requests"}</div><strong className="stat-num">{appointments.length}</strong></article>
       </div>
+      {role === "ADMIN" && <nav className="admin-quick-actions" aria-label="Administration shortcuts">
+        <button type="button" onClick={() => navigate("/patients")}>Manage patients</button>
+        <button type="button" onClick={() => navigate("/doctors")}>Manage doctors</button>
+        <button type="button" onClick={() => navigate("/users")}>Create login accounts</button>
+        <button type="button" onClick={() => navigate("/appointments")}>Review and schedule appointments</button>
+      </nav>}
       <div className="table-card"><div className="page-header"><h2>{role === "ADMIN" ? "Recent requests" : "Recent appointments"}</h2><button type="button" onClick={() => navigate("/appointments")}>{role === "PATIENT" ? "Request appointment" : "View appointments"}</button></div>
         {appointments.length ? <ul className="appointment-list">{appointments.slice(0, 5).map(a => <li key={a.id}><div><strong>{a.patient?.name || "Your visit"}</strong><span>{a.date} · {a.time}</span></div><span className={`status status-${a.status.toLowerCase()}`}>{a.status.replace("_", " ")}</span></li>)}</ul> : <div className="empty-state">{role === "PATIENT" ? "No visits yet. Request an appointment when you are ready." : "No appointments yet."}</div>}
       </div>
