@@ -7,10 +7,11 @@ import { useAuth } from "../auth/AuthContext";
 function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [workspace, setWorkspace] = useState("PATIENT");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { reload, logoutError } = useAuth();
+  const { reload, logout, logoutError } = useAuth();
 
   async function handleLogin(e) {
     e.preventDefault();
@@ -25,7 +26,12 @@ function Login() {
 
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("refreshToken", response.data.refreshToken);
-      await reload();
+      const identity = await reload();
+      if (!identity?.roles?.includes(workspace)) {
+        logout();
+        setError(`This account is not enabled for the ${workspace.toLowerCase()} workspace. Select the correct workspace or contact hospital administration.`);
+        return;
+      }
       navigate("/dashboard");
     } catch (loginError) {
       localStorage.removeItem("token");
@@ -56,7 +62,11 @@ function Login() {
         </div>
 
         <h1>CareSync</h1>
-        <p>Sign in to continue</p>
+        <p>Choose your workspace. Access is determined by your hospital account.</p>
+
+        <div className="login-workspaces" role="group" aria-label="Select workspace">
+          {[ ["PATIENT", "Patient"], ["DOCTOR", "Doctor"], ["ADMIN", "Admin"] ].map(([role, label]) => <button key={role} type="button" className={workspace === role ? "selected" : ""} aria-pressed={workspace === role} onClick={() => setWorkspace(role)}>{label}</button>)}
+        </div>
 
         <label htmlFor="username">Username</label>
         <input
@@ -83,7 +93,7 @@ function Login() {
         {logoutError && <div className="error" role="alert">{logoutError}</div>}
 
         <button type="submit" disabled={loading}>
-          {loading ? "Signing in..." : "Login"}
+          {loading ? "Signing in..." : "Sign in"}
         </button>
       </form>
     </div>

@@ -228,6 +228,9 @@ input:focus, select:focus, textarea:focus {
 .login-mark { width: 52px; height: 52px; border-radius: 16px; margin-bottom: 10px; }
 .login-card h1 { font-size: 2rem; font-weight: 800; }
 .login-card > p { color: var(--muted); margin-bottom: 14px; }
+.login-workspaces { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:4px 0 12px; }
+.login-workspaces button { padding:10px 8px; border:1px solid var(--line); border-radius:12px; background:transparent; color:var(--muted); font-weight:600; cursor:pointer; }
+.login-workspaces button.selected { color:var(--accent-ink); border-color:var(--accent); background:var(--accent); }
 .login-card label { font-size: .88rem; font-weight: 500; color: var(--muted); margin-top: 8px; }
 .login-card .error {
   background: rgba(255, 92, 108, .12);
