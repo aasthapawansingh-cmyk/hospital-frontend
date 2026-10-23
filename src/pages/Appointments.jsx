@@ -23,6 +23,7 @@ export default function Appointments() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [rescheduling, setRescheduling] = useState(null);
+  const [aiDrafts, setAiDrafts] = useState({});
   const availabilityRequestId = useRef(0);
   const slotKey = form.date && form.time ? `${form.date}|${form.time}` : "";
 
@@ -123,6 +124,33 @@ export default function Appointments() {
     } catch (e) { setError(responseError(e, "That status change was not allowed.")); }
   }
 
+  function updateAiDraft(appointmentId, updates) {
+    setAiDrafts(current => ({
+      ...current,
+      [appointmentId]: { ...(current[appointmentId] || { notes: "", draft: "", error: "", loading: false }), ...updates },
+    }));
+  }
+
+  async function generateAiDraft(appointmentId) {
+    const current = aiDrafts[appointmentId] || { notes: "" };
+    if (!current.notes?.trim()) {
+      updateAiDraft(appointmentId, { error: "Enter clinician notes before generating a draft." });
+      return;
+    }
+    updateAiDraft(appointmentId, { loading: true, error: "", draft: "" });
+    try {
+      const response = await api.post(`/api/v1/appointment/${appointmentId}/ai-summary-draft`, {
+        clinicianNotes: current.notes.trim(),
+      });
+      updateAiDraft(appointmentId, { draft: response.data.draft, loading: false });
+    } catch (e) {
+      const message = e.response?.status === 403
+        ? "Only the doctor assigned to this appointment can generate its draft."
+        : responseError(e, "Could not generate the AI draft. Please try again.");
+      updateAiDraft(appointmentId, { error: message, loading: false });
+    }
+  }
+
   async function checkRescheduleAvailability() {
     if (!rescheduling?.date || !rescheduling?.time) return;
     setRescheduling({ ...rescheduling, checking: true, doctors: [], doctorId: "" });
@@ -185,6 +213,29 @@ export default function Appointments() {
           <div className="appointment-heading"><div><h3>{a.patient?.name || "Your appointment"}</h3><p>{a.date} at {a.time} · {a.doctor?.name || "Care team"}</p></div><span className={`status status-${a.status.toLowerCase()}`}>{a.status.replace("_", " ")}</span></div>
           <p><strong>Reason:</strong> {a.reason || "Not provided"}</p>
           {role !== "PATIENT" && a.patient && <p className="patient-detail">Patient details: {a.patient.age} years · {a.patient.gender} · {a.patient.contact}</p>}
+          {role === "DOCTOR" && <section className="ai-draft-tool" aria-label={`AI visit summary for appointment ${a.id}`}>
+            <div>
+              <h4>AI visit summary draft</h4>
+              <p>Notes are sent to the configured AI provider. Use only de-identified notes; do not include patient names or other identifying details.</p>
+            </div>
+            <textarea
+              aria-label="Clinician notes for AI summary"
+              maxLength={5000}
+              placeholder="Enter relevant clinician notes…"
+              value={aiDrafts[a.id]?.notes || ""}
+              onChange={e => updateAiDraft(a.id, { notes: e.target.value, error: "" })}
+            />
+            {aiDrafts[a.id]?.error && <p className="error-message" role="alert">{aiDrafts[a.id].error}</p>}
+            <button type="button" onClick={() => generateAiDraft(a.id)} disabled={aiDrafts[a.id]?.loading || !aiDrafts[a.id]?.notes?.trim()}>
+              {aiDrafts[a.id]?.loading ? "Generating draft…" : "Generate draft"}
+            </button>
+            {aiDrafts[a.id]?.draft && <div className="ai-draft-result" aria-live="polite">
+              <strong>AI-generated draft · clinician review required</strong>
+              <p>This draft has not been approved or saved to the patient record.</p>
+              <div>{aiDrafts[a.id].draft}</div>
+              <button type="button" className="secondary-button" onClick={() => updateAiDraft(a.id, { draft: "", error: "" })}>Discard draft</button>
+            </div>}
+          </section>}
           {a.status === "CANCELLED" ? <p className="legacy-status">This appointment was cancelled and is kept in the record.</p> : <ol className="timeline">{statuses.map((status, index) => {
             const reached = statuses.indexOf(a.status);
             const history = a.statusHistory?.find(h => h.toStatus === status);

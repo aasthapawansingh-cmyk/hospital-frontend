@@ -57,4 +57,14 @@ body {
 .reschedule-form h4,.reschedule-form textarea { grid-column:1/-1; }
 .schedule-history { display:grid; gap:5px; color:var(--muted); }
 .schedule-history small { font-size:.8rem; }
+.ai-draft-tool { display:grid; gap:10px; padding:14px; border:1px solid var(--line, #d9e1ea); border-radius:12px; background:#f8fafc; color:#172033; }
+.ai-draft-tool h4 { margin:0 0 4px; }
+.ai-draft-tool p { margin:0; color:#475569; font-size:.9rem; }
+.ai-draft-tool textarea { width:100%; min-height:100px; resize:vertical; }
+.ai-draft-tool > button { justify-self:start; min-height:42px; border:0; border-radius:10px; padding:10px 16px; color:var(--accent-ink); background:var(--accent); font-weight:700; }
+.ai-draft-tool > button:disabled { opacity:.55; cursor:not-allowed; }
+.ai-draft-result { display:grid; gap:10px; padding:14px; border:1px solid #d6b56d; border-radius:10px; background:#fffdf6; color:#172033; overflow-wrap:anywhere; }
+.ai-draft-result .secondary-button { color:#334155; border-color:#94a3b8; }
+.ai-draft-result > div { white-space:pre-wrap; line-height:1.55; }
+.ai-draft-result .secondary-button { justify-self:start; }
 @media(max-width:680px) { .booking-form,.reschedule-form { grid-template-columns:1fr; } .timeline { grid-template-columns:repeat(2,minmax(0,1fr)); } .appointment-heading { align-items:flex-start; flex-direction:column; } .patient-profile dl { grid-template-columns:1fr; } .patient-profile .profile-address { grid-column:auto; } .reschedule-form h4,.reschedule-form textarea { grid-column:auto; } }
